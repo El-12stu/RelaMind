@@ -8,11 +8,11 @@
         <version>3.4.5</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
-    <groupId>com.yupi</groupId>
-    <artifactId>yu-image-search-mcp-server</artifactId>
+    <groupId>io.el12stu</groupId>
+    <artifactId>image-search-mcp-server</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>yu-image-search-mcp-server</name>
-    <description>yu-image-search-mcp-server</description>
+    <name>image-search-mcp-server</name>
+    <description>image-search-mcp-server</description>
     <url/>
     <licenses>
         <license/>

@@ -92,6 +92,8 @@
         <!--            <artifactId>spring-ai-starter-vector-store-pgvector</artifactId>-->
         <!--            <version>1.0.0-M7</version>-->
         <!--        </dependency>-->
+
+
         <!-- Spring AI MCP Client -->
         <dependency>
             <groupId>org.springframework.ai</groupId>

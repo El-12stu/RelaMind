@@ -1,8 +1,11 @@
 spring:
+  #应用名称
   application:
-    name: yu-ai-agent
+    name: RelaMind
+  #本地隐私yml覆盖
   profiles:
     active: local
+  #LLM上下文存储使用 Cassandra
   cassandra:
     keyspace-name: relamind
     contact-points: localhost
@@ -11,45 +14,36 @@ spring:
     username: cassandra
     password: cassandra
     schema-action: CREATE_IF_NOT_EXISTS
-# RelaMind 聊天记忆配置
-relamind:
-  chat:
-    memory:
-      # 最大消息数量限制。如果设置为大于 0 的值，只返回最新的 N 条消息。
-      # 设置为 0 或负数表示不限制（返回所有消息）。默认值为 0。
-      max-messages: 50  # 示例：设置为 50 表示只获取最新的 50 条消息
-# 临时注释掉，便于大家开发调试和部署（实际填写 PgVector 数据库信息）
-#  datasource:
-#    url: xxx
-#    username: root
-#    password: 123456
   ai:
     dashscope:
-      # 需要替换为你自己的 key
-      api-key: your-api-key
+      api-key: # 需要替换为你自己的 key
       chat:
         options:
           model: qwen-plus
+    #本地部署LLM
     ollama:
       base-url: http://localhost:11434
       chat:
         model: gemma3:1b
-# 临时注释掉，便于大家开发调试和部署（实际需要启动 MCP 服务）
-#    mcp:
-#      client:
-#        sse:
-#          connections:
-#            server1:
-#              url: http://localhost:8127
-#        stdio:
-#          servers-configuration: classpath:mcp-servers.json
-# 临时注释掉，便于大家开发调试和部署（实际需要启动 PgVector 数据库）
-#    vectorstore:
-#      pgvector:
-#        index-type: HNSW
-#        dimensions: 1536
-#        distance-type: COSINE_DISTANCE
-#        max-document-batch-size: 10000 # Optional: Maximum number of documents per batch
+    # MCP服务
+    mcp:
+      client:
+        stdio:
+          servers-configuration: classpath:mcp-servers.json
+# 开发调试和部署（实际填写 PgVector 数据库信息）
+  datasource:
+    url: #你的pvector数据库地址
+    username: #你的用户名
+    password: #你的密码
+# 开发调试和部署（实际需要启动 PgVector 数据库）
+    vectorstore:
+      pgvector:
+        index-type: HNSW
+        dimensions: 1536
+        distance-type: COSINE_DISTANCE
+        max-document-batch-size: 10000 # Optional: Maximum number of documents per batch
+
+
 server:
   port: 8123
   servlet:
@@ -65,17 +59,24 @@ springdoc:
   group-configs:
     - group: 'default'
       paths-to-match: '/**'
-      packages-to-scan: com.yupi.yuaiagent.controller
+      packages-to-scan: io.el12stu.RelaMind.controller
 # knife4j config
 knife4j:
   enable: true
   setting:
     language: zh_cn
-# searchAPI
+# searchAPI网页搜索
 search-api:
   # 需要替换为你自己的 key
-  api-key: 你的 API Key
+  api-key: #你的key
 # 修改日志级别，查看 Spring AI 更多调用细节
 logging:
   level:
     org.springframework.ai: DEBUG
+# RelaMind 聊天记忆配置
+relamind:
+  chat:
+    memory:
+      # 最大消息数量限制。如果设置为大于 0 的值，只返回最新的 N 条消息。
+      # 设置为 0 或负数表示不限制（返回所有消息）。默认值为 0。
+      max-messages: 50  # 示例：设置为 10 表示只获取最新的 10 条消息

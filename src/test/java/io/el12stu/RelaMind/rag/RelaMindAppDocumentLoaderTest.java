@@ -8,10 +8,10 @@ import org.springframework.boot.test.context.SpringBootTest;
 class RelaMindAppDocumentLoaderTest {
 
     @Resource
-    private LoveAppDocumentLoader loveAppDocumentLoader;
+    private RelaMindAppDocumentLoader relaMindAppDocumentLoader;
 
     @Test
     void loadMarkdowns() {
-        loveAppDocumentLoader.loadMarkdowns();
+        relaMindAppDocumentLoader.loadMarkdowns();
     }
 }

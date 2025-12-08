@@ -6,7 +6,7 @@ import org.springframework.ai.rag.generation.augmentation.ContextualQueryAugment
 /**
  * 创建上下文查询增强器的工厂
  */
-public class LoveAppContextualQueryAugmenterFactory {
+public class RelaMindAppContextualQueryAugmenterFactory {
 
     public static ContextualQueryAugmenter createInstance() {
         PromptTemplate emptyContextPromptTemplate = new PromptTemplate("""

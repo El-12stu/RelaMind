@@ -2,7 +2,7 @@ spring:
   ai:
     mcp:
       server:
-        name: yu-image-search-mcp-server
+        name: image-search-mcp-server
         version: 0.0.1
         type: SYNC
         # sse

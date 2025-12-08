@@ -6,12 +6,24 @@ import org.junit.jupiter.api.Test;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.util.List;
 import java.util.Map;
 
+/**
+ * PgVector 向量存储配置测试类
+ * 
+ * 注意：由于主应用类 RelaMindApplication 排除了 DataSourceAutoConfiguration，
+ * 测试中需要重新导入以启用 DataSource 和 JdbcTemplate 的自动配置。
+ * 同时需要激活 local profile 以加载数据库连接配置。
+ */
 @SpringBootTest
+@ActiveProfiles("local")
+@Import(DataSourceAutoConfiguration.class)
 class PgVectorVectorStoreConfigTest {
 
     @Resource

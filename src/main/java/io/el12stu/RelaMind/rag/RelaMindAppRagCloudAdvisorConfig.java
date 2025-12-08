@@ -16,13 +16,13 @@ import org.springframework.context.annotation.Configuration;
  */
 @Configuration
 @Slf4j
-public class LoveAppRagCloudAdvisorConfig {
+public class RelaMindAppRagCloudAdvisorConfig {
 
     @Value("${spring.ai.dashscope.api-key}")
     private String dashScopeApiKey;
 
-    @Bean
-    public Advisor loveAppRagCloudAdvisor() {
+    //@Bean
+    public Advisor RelaMindAppRagCloudAdvisor() {
         DashScopeApi dashScopeApi = DashScopeApi.builder()
                 .apiKey(dashScopeApiKey)
                 .build();

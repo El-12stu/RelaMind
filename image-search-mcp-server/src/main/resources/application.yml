@@ -1,6 +1,6 @@
 spring:
   application:
-    name: yu-image-search-mcp-server
+    name: image-search-mcp-server
   profiles:
     active: sse
 server:
