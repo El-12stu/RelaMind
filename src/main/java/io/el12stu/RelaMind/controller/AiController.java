@@ -29,38 +29,38 @@ public class AiController {
     private ChatModel dashscopeChatModel;
 
     /**
-     * 同步调用 AI 恋爱大师应用
+     * 同步调用RelaMind应用
      *
      * @param message
      * @param chatId
      * @return
      */
-    @GetMapping("/love_app/chat/sync")
-    public String doChatWithLoveAppSync(String message, String chatId) {
+    @GetMapping("/RelaMind_app/chat/sync")
+    public String doChatWithRelaMindAppSync(String message, String chatId) {
         return relaMindApp.doChat(message, chatId);
     }
 
     /**
-     * SSE 流式调用 AI 恋爱大师应用
+     * SSE 流式调用RelaMind应用
      *
      * @param message
      * @param chatId
      * @return
      */
-    @GetMapping(value = "/love_app/chat/sse", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @GetMapping(value = "/RelaMind_app/chat/sse", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<String> doChatWithLoveAppSSE(String message, String chatId) {
         return relaMindApp.doChatByStream(message, chatId);
     }
 
     /**
-     * SSE 流式调用 AI 恋爱大师应用
+     * SSE 流式调用RelaMind应用
      *
      * @param message
      * @param chatId
      * @return
      */
-    @GetMapping(value = "/love_app/chat/server_sent_event")
-    public Flux<ServerSentEvent<String>> doChatWithLoveAppServerSentEvent(String message, String chatId) {
+    @GetMapping(value = "/RelaMind_app/chat/server_sent_event")
+    public Flux<ServerSentEvent<String>> doChatWithRelaMindAppServerSentEvent(String message, String chatId) {
         return relaMindApp.doChatByStream(message, chatId)
                 .map(chunk -> ServerSentEvent.<String>builder()
                         .data(chunk)
@@ -68,14 +68,14 @@ public class AiController {
     }
 
     /**
-     * SSE 流式调用 AI 恋爱大师应用
+     * SSE 流式调用RelaMind应用
      *
      * @param message
      * @param chatId
      * @return
      */
-    @GetMapping(value = "/love_app/chat/sse_emitter")
-    public SseEmitter doChatWithLoveAppServerSseEmitter(String message, String chatId) {
+    @GetMapping(value = "/RelaMind_app/chat/sse_emitter")
+    public SseEmitter doChatWithRelaMindAppServerSseEmitter(String message, String chatId) {
         // 创建一个超时时间较长的 SseEmitter
         SseEmitter sseEmitter = new SseEmitter(180000L); // 3 分钟超时
         // 获取 Flux 响应式数据流并且直接通过订阅推送给 SseEmitter

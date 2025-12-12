@@ -58,9 +58,11 @@ public class ToolCallAgent extends ReActAgent {
      */
     @Override
     public boolean think() {
-        // 1、校验提示词，拼接用户提示词
+        // 1、校验提示词，拼接用户提示词（动态添加当前步数信息）
         if (StrUtil.isNotBlank(getNextStepPrompt())) {
-            UserMessage userMessage = new UserMessage(getNextStepPrompt());
+            // 构建包含当前步数信息的提示词
+            String stepInfoPrompt = buildStepInfoPrompt();
+            UserMessage userMessage = new UserMessage(stepInfoPrompt);
             getMessageList().add(userMessage);
         }
         // 2、调用 AI 大模型，获取工具调用结果
@@ -69,7 +71,7 @@ public class ToolCallAgent extends ReActAgent {
         try {
             ChatResponse chatResponse = getChatClient().prompt(prompt)
                     .system(getSystemPrompt())
-                    .tools(availableTools)
+                    .toolCallbacks(availableTools)
                     .call()
                     .chatResponse();
             // 记录响应，用于等下 Act
@@ -131,5 +133,36 @@ public class ToolCallAgent extends ReActAgent {
                 .collect(Collectors.joining("\n"));
         log.info(results);
         return results;
+    }
+
+    /**
+     * 构建包含当前步数信息的提示词
+     *
+     * @return 包含步数信息的提示词
+     */
+    private String buildStepInfoPrompt() {
+        String basePrompt = getNextStepPrompt();
+        int currentStep = getCurrentStep();
+        int maxSteps = getMaxSteps();
+        
+        // 在提示词开头添加步数信息
+        String stepInfo = String.format("""
+                ============================================
+                CURRENT STEP: %d / %d
+                ============================================
+                
+                """, currentStep, maxSteps);
+        
+        // 如果接近或超过最大步数，添加警告信息
+        if (currentStep >= maxSteps * 0.8) {
+            int remainingSteps = maxSteps - currentStep;
+            stepInfo += String.format("""
+                    ⚠️ WARNING: You are on step %d of %d. Only %d steps remaining!
+                    You should prepare to finalize the task and call doTerminate soon.
+                    
+                    """, currentStep, maxSteps, remainingSteps);
+        }
+        
+        return stepInfo + basePrompt;
     }
 }

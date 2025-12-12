@@ -124,15 +124,18 @@ public class RelaMindApp {
 
     // RAG知识库问答功能
 
-    // 基于内存的向量数据库，已注释bean，按需开启
+    // 基于内存的向量数据库
     @Autowired(required = false)
     private VectorStore RelaMindappvectorstore;
+
     // 基于云知识库服务的 RAG 应用 Advisor
     @Autowired(required = false)
     private Advisor RelaMindAppRagCloudAdvisor;
-    // 基于 PgVector 向量存储的 RAG 应用 Advisor
+
+    // 基于(云数据库) PgVector 向量存储的 RAG 应用 Advisor
     @Autowired(required = false)
     private VectorStore pgVectorVectorStore;
+
     // 重写查询服务
     @Resource
     private QueryRewriter queryRewriter;
@@ -154,9 +157,9 @@ public class RelaMindApp {
                 .advisors(spec -> spec.param(ChatMemory.CONVERSATION_ID, chatId))
                 // RAG应用(基于内存的向量数据库)
                 .advisors(new QuestionAnswerAdvisor(RelaMindappvectorstore))
-                // 应用 RAG 检索增强服务（基于云知识库服务）
+                // 应用 RAG 检索增强服务（基于云知识库服务）。若开启，需要同步修改RelaMindAppRagCloudAdvisorConfig.java，并开启阿里云RAG服务
                 //.advisors(RelaMindAppRagCloudAdvisor)
-                // 应用 RAG 检索增强服务（基于 PgVector 向量存储）
+                // 应用 RAG 检索增强服务（阿里云 RDS PostgreSQL 向量数据库）。若开启，需要同步修改PgVectorVectorStoreConfig.java，并开启阿里云 RDS PostgreSQL数据库服务 以及 修改application.yml->Pgvectore
                 //.advisors(new QuestionAnswerAdvisor(pgVectorVectorStore))
                 // 应用自定义的 RAG 检索增强服务（文档查询器 + 上下文增强器）
 //                .advisors(
@@ -211,7 +214,8 @@ public class RelaMindApp {
                 .prompt()
                 .user(message)
                 .advisors(spec -> spec.param(ChatMemory.CONVERSATION_ID, chatId))
-                .toolCallbacks(toolCallbackProvider)
+                // AI 调用 MCP 服务,若开启，需要同步修改application.yml->MCP
+                //.toolCallbacks(toolCallbackProvider)
                 .call()
                 .chatResponse();
         String content = chatResponse.getResult().getOutput().getText();

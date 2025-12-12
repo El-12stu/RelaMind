@@ -15,13 +15,13 @@ import static org.springframework.ai.vectorstore.pgvector.PgVectorStore.PgDistan
 import static org.springframework.ai.vectorstore.pgvector.PgVectorStore.PgIndexType.HNSW;
 
 // 为方便开发调试和部署，临时注释，如果需要使用 PgVector 存储知识库，取消注释即可
-@Configuration
+//@Configuration
 public class PgVectorVectorStoreConfig {
 
     @Resource
     private RelaMindAppDocumentLoader relaMindAppDocumentLoader;
 
-    //@Bean
+    @Bean
     public VectorStore pgVectorVectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel dashscopeEmbeddingModel) {
         VectorStore vectorStore = PgVectorStore.builder(jdbcTemplate, dashscopeEmbeddingModel)
                 .dimensions(1536)                    // Optional: defaults to model dimensions or 1536

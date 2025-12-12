@@ -15,23 +15,48 @@ public class Manus extends ToolCallAgent {
     public Manus(ToolCallback[] allTools, ChatModel dashscopeChatModel) {
         super(allTools);
         this.setName("Manus");
+
+        // ✅ 精简的系统提示词（每次think都会发送，需要尽量简短）
         String SYSTEM_PROMPT = """
-                You are Manus, an all-capable AI assistant, aimed at solving any task presented by the user.
-                You have various tools at your disposal that you can call upon to efficiently complete complex requests.
+                You are Manus, a task-oriented AI assistant. Complete tasks efficiently, then STOP.
+                
+                CRITICAL: doTerminate() is your ONLY way to end tasks. Call it when:
+                - All task parts completed + output generated in requested format, OR
+                - Unable to proceed further
+                
+                Output format: Match user's request (PDF→generatePDF, file→writeFile, text→writeFile)
+                Efficiency: Search before scrape, read before write, collect all info before generating output.
+                Download only resources needed for final output.
+                
+                Before doTerminate: Verify task understood + info collected + output generated + all parts done.
                 """;
+
         this.setSystemPrompt(SYSTEM_PROMPT);
+
+        // ✅ 精简的下一步提示词（每次think都会发送，需要尽量简短）
         String NEXT_STEP_PROMPT = """
-                Based on user needs, proactively select the most appropriate tool or combination of tools.
-                For complex tasks, you can break down the problem and use different tools step by step to solve it.
-                After using each tool, clearly explain the execution results and suggest the next steps.
-                If you want to stop the interaction at any point, use the `terminate` tool/function call.
+                Decide next action:
+                1. Review conversation history - what's done? what's missing? what format needed?
+                2. Choose the SINGLE most important next task and appropriate tool
+                3. If complete: generate output in requested format → call doTerminate()
+                   If stuck: generate partial output → call doTerminate()
+                   Otherwise: use appropriate tool
+                4. Don't repeat calls, combine info before output, match user's format.
                 """;
+
         this.setNextStepPrompt(NEXT_STEP_PROMPT);
-        this.setMaxSteps(20);
+
+        // 增加步数以应对复杂任务
+        this.setMaxSteps(5);
+
         // 初始化 AI 对话客户端
-        ChatClient chatClient = ChatClient.builder(dashscopeChatModel)
-                .defaultAdvisors(new MyLoggerAdvisor())
-                .build();
+        ChatClient.Builder builder = ChatClient.builder(dashscopeChatModel)
+                .defaultAdvisors(new MyLoggerAdvisor());
+
+        // 注意：不在这里设置 defaultToolCallbacks，避免与 ToolCallAgent.think() 中的 toolCallbacks 重复注册
+        // 工具会在每次 think() 调用时通过 toolCallbacks(availableTools) 注册
+
+        ChatClient chatClient = builder.build();
         this.setChatClient(chatClient);
     }
 }

@@ -1,21 +1,26 @@
 package io.el12stu.RelaMind.tools;
 
 import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.io.IoUtil;
 import com.itextpdf.kernel.font.PdfFont;
 import com.itextpdf.kernel.font.PdfFontFactory;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.layout.Document;
 import com.itextpdf.layout.element.Paragraph;
+import com.itextpdf.layout.properties.TextAlignment;
 import io.el12stu.RelaMind.constant.FileConstant;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 
 import java.io.IOException;
+import java.io.InputStream;
 
 /**
  * PDF 生成工具
  */
+@Slf4j
 public class PDFGenerationTool {
 
     @Tool(description = "Generate a PDF file with given content", returnDirect = false)

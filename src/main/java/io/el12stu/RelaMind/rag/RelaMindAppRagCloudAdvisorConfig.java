@@ -21,12 +21,12 @@ public class RelaMindAppRagCloudAdvisorConfig {
     @Value("${spring.ai.dashscope.api-key}")
     private String dashScopeApiKey;
 
-    //@Bean
+    @Bean
     public Advisor RelaMindAppRagCloudAdvisor() {
         DashScopeApi dashScopeApi = DashScopeApi.builder()
                 .apiKey(dashScopeApiKey)
                 .build();
-        final String KNOWLEDGE_INDEX = "恋爱大师";
+        final String KNOWLEDGE_INDEX = "该处修改你在阿里云灵积RAG中的文件名";
         DocumentRetriever dashScopeDocumentRetriever = new DashScopeDocumentRetriever(dashScopeApi,
                 DashScopeDocumentRetrieverOptions.builder()
                         .withIndexName(KNOWLEDGE_INDEX)

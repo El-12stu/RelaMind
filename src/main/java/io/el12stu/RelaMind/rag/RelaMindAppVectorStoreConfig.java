@@ -25,7 +25,7 @@ public class RelaMindAppVectorStoreConfig {
     @Resource
     private MyKeywordEnricher myKeywordEnricher;
 
-    //@Bean
+    @Bean
     VectorStore RelaMindappvectorstore(EmbeddingModel dashscopeEmbeddingModel) {
         SimpleVectorStore simpleVectorStore = SimpleVectorStore.builder(dashscopeEmbeddingModel).build();
         // 加载文档
