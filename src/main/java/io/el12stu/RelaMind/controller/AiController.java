@@ -1,6 +1,6 @@
 package io.el12stu.RelaMind.controller;
 
-import io.el12stu.RelaMind.agent.YuManus;
+import io.el12stu.RelaMind.agent.Manus;
 import io.el12stu.RelaMind.app.RelaMindApp;
 import jakarta.annotation.Resource;
 import org.springframework.ai.chat.model.ChatModel;
@@ -99,7 +99,7 @@ public class AiController {
      */
     @GetMapping("/manus/chat")
     public SseEmitter doChatWithManus(String message) {
-        YuManus yuManus = new YuManus(allTools, dashscopeChatModel);
-        return yuManus.runStream(message);
+        Manus manus = new Manus(allTools, dashscopeChatModel);
+        return manus.runStream(message);
     }
 }
