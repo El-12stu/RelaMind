@@ -96,7 +96,8 @@ public class RelaMindApp {
                 .user(message)
                 .advisors(spec -> spec.param(ChatMemory.CONVERSATION_ID, chatId))
                 .stream()
-                .content();
+                .content()
+                .concatWith(Flux.just("[DONE]"));
     }
 
     record PsychReport(String title, List<String> suggestions) {

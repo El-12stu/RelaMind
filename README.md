@@ -124,7 +124,7 @@ RelaMind/
 ├── src/main/resources/
 │   ├── application.yml    # 配置文件
 │   └── document/         # 知识库文档
-└── yu-ai-agent-frontend/ # 前端项目
+└── ai-agent-frontend/ # 前端项目
     └── src/
         └── views/
             └── LoveMaster.vue
@@ -152,7 +152,7 @@ RelaMind/
 mvn spring-boot:run
 
 # 前端
-cd yu-ai-agent-frontend
+cd ai-agent-frontend
 npm install
 npm run dev
 ```

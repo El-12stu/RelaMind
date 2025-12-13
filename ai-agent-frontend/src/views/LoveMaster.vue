@@ -1,9 +1,9 @@
 <template>
-  <div class="super-agent-container">
+  <div class="love-master-container">
     <div class="header">
       <div class="back-button" @click="goBack">返回</div>
-      <h1 class="title">AI超级智能体</h1>
-      <div class="placeholder"></div>
+      <h1 class="title">AI恋爱大师</h1>
+      <div class="chat-id">会话ID: {{ chatId }}</div>
     </div>
     
     <div class="content-wrapper">
@@ -11,7 +11,7 @@
         <ChatRoom 
           :messages="messages" 
           :connection-status="connectionStatus"
-          ai-type="super"
+          ai-type="love"
           @send-message="sendMessage"
         />
       </div>
@@ -29,114 +29,70 @@ import { useRouter } from 'vue-router'
 import { useHead } from '@vueuse/head'
 import ChatRoom from '../components/ChatRoom.vue'
 import AppFooter from '../components/AppFooter.vue'
-import { chatWithManus } from '../api'
+import { chatWithRelaMind } from '../api'
 
 // 设置页面标题和元数据
 useHead({
-  title: 'AI超级智能体 - 鱼皮AI超级智能体应用平台',
+  title: 'AI恋爱大师 - 鱼皮AI超级智能体应用平台',
   meta: [
     {
       name: 'description',
-      content: 'AI超级智能体是鱼皮AI超级智能体应用平台的全能助手，能解答各类专业问题，提供精准建议和解决方案'
+      content: 'AI恋爱大师是鱼皮AI超级智能体应用平台的专业情感顾问，帮你解答各种恋爱问题，提供情感建议'
     },
     {
       name: 'keywords',
-      content: 'AI超级智能体,智能助手,专业问答,AI问答,专业建议,鱼皮,AI智能体'
+      content: 'AI恋爱大师,情感顾问,恋爱咨询,AI聊天,情感问题,鱼皮,AI智能体'
     }
   ]
 })
 
 const router = useRouter()
 const messages = ref([])
+const chatId = ref('')
 const connectionStatus = ref('disconnected')
 let eventSource = null
 
+// 生成随机会话ID
+const generateChatId = () => {
+  return 'love_' + Math.random().toString(36).substring(2, 10)
+}
+
 // 添加消息到列表
-const addMessage = (content, isUser, type = '') => {
+const addMessage = (content, isUser) => {
   messages.value.push({
     content,
     isUser,
-    type,
     time: new Date().getTime()
   })
 }
 
 // 发送消息
 const sendMessage = (message) => {
-  addMessage(message, true, 'user-question')
+  addMessage(message, true)
   
   // 连接SSE
   if (eventSource) {
     eventSource.close()
   }
   
-  // 设置连接状态
+  // 创建一个空的AI回复消息
+  const aiMessageIndex = messages.value.length
+  addMessage('', false)
+  
   connectionStatus.value = 'connecting'
-  
-  // 临时存储
-  let messageBuffer = []; // 用于存储SSE消息的缓冲区
-  let lastBubbleTime = Date.now(); // 上一个气泡的创建时间
-  let isFirstResponse = true; // 是否是第一次响应
-  
-  const chineseEndPunctuation = ['。', '！', '？', '…']; // 中文句子结束标点
-  const minBubbleInterval = 800; // 气泡最小间隔时间(毫秒)
-  
-  // 创建消息气泡的函数
-  const createBubble = (content, type = 'ai-answer') => {
-    if (!content.trim()) return;
-    
-    // 添加适当的延迟，使消息显示更自然
-    const now = Date.now();
-    const timeSinceLastBubble = now - lastBubbleTime;
-    
-    if (isFirstResponse) {
-      // 第一条消息立即显示
-      addMessage(content, false, type);
-      isFirstResponse = false;
-    } else if (timeSinceLastBubble < minBubbleInterval) {
-      // 如果与上一气泡间隔太短，添加一个延迟
-      setTimeout(() => {
-        addMessage(content, false, type);
-      }, minBubbleInterval - timeSinceLastBubble);
-    } else {
-      // 正常添加消息
-      addMessage(content, false, type);
-    }
-    
-    lastBubbleTime = now;
-    messageBuffer = []; // 清空缓冲区
-  };
-  
-  eventSource = chatWithManus(message)
+  eventSource = chatWithRelaMind(message, chatId.value)
   
   // 监听SSE消息
   eventSource.onmessage = (event) => {
     const data = event.data
-    
     if (data && data !== '[DONE]') {
-      messageBuffer.push(data);
-      
-      // 检查是否应该创建新气泡
-      const combinedText = messageBuffer.join('');
-      
-      // 句子结束或消息长度达到阈值
-      const lastChar = data.charAt(data.length - 1);
-      const hasCompleteSentence = chineseEndPunctuation.includes(lastChar) || data.includes('\n\n');
-      const isLongEnough = combinedText.length > 40;
-      
-      if (hasCompleteSentence || isLongEnough) {
-        createBubble(combinedText);
+      // 更新最新的AI消息内容，而不是创建新消息
+      if (aiMessageIndex < messages.value.length) {
+        messages.value[aiMessageIndex].content += data
       }
     }
     
     if (data === '[DONE]') {
-      // 如果还有未显示的内容，创建最后一个气泡
-      if (messageBuffer.length > 0) {
-        const remainingContent = messageBuffer.join('');
-        createBubble(remainingContent, 'ai-final');
-      }
-      
-      // 完成后关闭连接
       connectionStatus.value = 'disconnected'
       eventSource.close()
     }
@@ -147,12 +103,6 @@ const sendMessage = (message) => {
     console.error('SSE Error:', error)
     connectionStatus.value = 'error'
     eventSource.close()
-    
-    // 如果出错时有未显示的内容，也创建气泡
-    if (messageBuffer.length > 0) {
-      const remainingContent = messageBuffer.join('');
-      createBubble(remainingContent, 'ai-error');
-    }
   }
 }
 
@@ -163,8 +113,11 @@ const goBack = () => {
 
 // 页面加载时添加欢迎消息
 onMounted(() => {
+  // 生成聊天ID
+  chatId.value = generateChatId()
+  
   // 添加欢迎消息
-  addMessage('你好，我是AI超级智能体。我可以解答各类问题，提供专业建议，请问有什么可以帮助你的吗？', false)
+  addMessage('欢迎来到AI恋爱大师，请告诉我你的恋爱问题，我会尽力给予帮助和建议。', false)
 })
 
 // 组件销毁前关闭SSE连接
@@ -176,19 +129,19 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-.super-agent-container {
+.love-master-container {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  background-color: #f9fbff;
+  background-color: #fff9f9;
 }
 
 .header {
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
+  display: flex;
+  justify-content: space-between;
   align-items: center;
   padding: 16px 24px;
-  background-color: #3f51b5;
+  background-color: #ff6b8b;
   color: white;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   position: sticky;
@@ -202,7 +155,6 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   transition: opacity 0.2s;
-  justify-self: start;
 }
 
 .back-button:hover {
@@ -218,13 +170,11 @@ onBeforeUnmount(() => {
   font-size: 20px;
   font-weight: bold;
   margin: 0;
-  text-align: center;
-  justify-self: center;
 }
 
-.placeholder {
-  width: 1px;
-  justify-self: end;
+.chat-id {
+  font-size: 14px;
+  opacity: 0.8;
 }
 
 .content-wrapper {
@@ -257,6 +207,10 @@ onBeforeUnmount(() => {
     font-size: 18px;
   }
   
+  .chat-id {
+    font-size: 12px;
+  }
+  
   .chat-area {
     padding: 12px;
     min-height: calc(100vh - 48px - 160px); /* 调整计算值 */
@@ -275,6 +229,10 @@ onBeforeUnmount(() => {
   
   .title {
     font-size: 16px;
+  }
+  
+  .chat-id {
+    display: none;
   }
   
   .chat-area {

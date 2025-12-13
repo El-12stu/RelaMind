@@ -1,6 +1,7 @@
 <template>
   <div class="ai-avatar-fallback" :class="type">
-    <span v-if="type === 'love'">❤️</span>
+    <span v-if="type === 'relamind'">🌱</span>
+    <span v-else-if="type === 'super'">🤖</span>
     <span v-else>🤖</span>
   </div>
 </template>
@@ -25,11 +26,11 @@ defineProps({
   border-radius: 50%;
 }
 
-.love {
-  background: linear-gradient(45deg, #ff6b8b, #ff8e8e);
+.relamind {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 }
 
-.default, .super {
+.super, .default {
   background: linear-gradient(45deg, #3f51b5, #5677fc);
 }
 </style> 

@@ -3,7 +3,7 @@
     <div class="footer-content">
       <div class="footer-section">
         <div class="footer-logo">
-          <h3>鱼皮AI超级智能体应用平台</h3>
+          <h3>RelaMind</h3>
         </div>
         <div class="footer-links">
           <a href="#">《用户协议》</a>
@@ -12,25 +12,40 @@
       </div>
       
       <div class="footer-section">
-        <h4>友情链接</h4>
+        <h4>项目信息</h4>
         <div class="footer-links">
-          <a href="https://www.mianshiya.com" target="_blank">面试鸭</a>
-          <a href="#" target="_blank">编程导航</a>
-          <a href="#" target="_blank">代码小抄</a>
+          <a href="https://github.com/El-12stu/RelaMind" target="_blank" rel="noopener noreferrer" class="github-link">
+            <span class="github-icon">📦</span> GitHub 仓库
+          </a>
+          <a href="https://github.com/El-12stu/RelaMind/blob/main/README.md" target="_blank" rel="noopener noreferrer">
+            项目文档
+          </a>
         </div>
       </div>
       
       <div class="footer-section">
-        <h4>联系我们</h4>
+        <h4>开发者</h4>
         <div class="footer-links">
-          <a href="#">商务合作</a>
-          <a href="#">站长：鱼皮</a>
+          <a href="https://github.com/El-12stu" target="_blank" rel="noopener noreferrer">
+            <span class="github-icon">👤</span> El-12
+          </a>
+          <a href="https://github.com/El-12stu/RelaMind/issues" target="_blank" rel="noopener noreferrer">
+            问题反馈
+          </a>
         </div>
       </div>
     </div>
     
     <div class="footer-bottom">
-      <p>© {{ currentYear }} 鱼皮AI超级智能体应用平台 - 让AI为你服务</p>
+      <p>© {{ currentYear }} RelaMind - 记录成长，理解自己，成为更好的你</p>
+      <p class="author">
+        Created by 
+        <a href="https://github.com/El-12stu" target="_blank" rel="noopener noreferrer" class="author-link">El-12</a>
+        | 
+        <a href="https://github.com/El-12stu/RelaMind" target="_blank" rel="noopener noreferrer" class="author-link">
+          View on GitHub
+        </a>
+      </p>
     </div>
   </footer>
 </template>
@@ -74,6 +89,10 @@ const currentYear = computed(() => new Date().getFullYear())
   font-size: 1.25rem;
   margin-bottom: 15px;
   color: #333;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .footer-section h4 {
@@ -95,7 +114,7 @@ const currentYear = computed(() => new Date().getFullYear())
 }
 
 .footer-links a:hover {
-  color: #007bff;
+  color: #667eea;
 }
 
 .qrcode {
@@ -130,6 +149,33 @@ const currentYear = computed(() => new Date().getFullYear())
   border-top: 1px solid #eee;
   color: #999;
   font-size: 0.9rem;
+}
+
+.author {
+  margin-top: 8px;
+  font-size: 0.85rem;
+  color: #999;
+}
+
+.author-link {
+  color: #667eea;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.author-link:hover {
+  color: #764ba2;
+  text-decoration: underline;
+}
+
+.github-link {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.github-icon {
+  font-size: 1rem;
 }
 
 /* 响应式设计 */
