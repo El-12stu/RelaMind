@@ -1,16 +1,35 @@
-# 使用预装 Maven 和 JDK21 的镜像
-FROM maven:3.9-amazoncorretto-21
+# 多阶段构建：构建阶段
+FROM maven:3.9-amazoncorretto-21 AS build
 WORKDIR /app
 
-# 只复制必要的源代码和配置文件
+# 复制 Maven 配置文件（利用 Docker 缓存层）
 COPY pom.xml .
+# 下载依赖（如果 pom.xml 没变，这层会被缓存）
+RUN mvn dependency:go-offline -B
+
+# 复制源代码
 COPY src ./src
 
-# 使用 Maven 执行打包
-RUN mvn clean package -DskipTests
+# 构建应用
+RUN mvn clean package -DskipTests -B
+
+# 运行阶段：使用更小的 JRE 镜像
+FROM amazoncorretto:21-alpine-jre
+WORKDIR /app
+
+# 创建非 root 用户
+RUN addgroup -S spring && adduser -S spring -G spring
+USER spring:spring
+
+# 从构建阶段复制 jar 文件
+COPY --from=build /app/target/RelaMind-0.0.1-SNAPSHOT.jar app.jar
 
 # 暴露应用端口
 EXPOSE 8123
 
-# 使用生产环境配置启动应用
-CMD ["java", "-jar", "/app/target/yu-ai-agent-0.0.1-SNAPSHOT.jar", "--spring.profiles.active=prod"]
+# 健康检查
+HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:8123/api/actuator/health || exit 1
+
+# 启动应用
+ENTRYPOINT ["java", "-jar", "app.jar"]

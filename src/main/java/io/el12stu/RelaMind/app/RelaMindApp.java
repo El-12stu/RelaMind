@@ -6,6 +6,9 @@ import io.el12stu.RelaMind.advisor.SensitiveWordAdvisor;
 import io.el12stu.RelaMind.advisor.ToolCallLimitAdvisor;
 import io.el12stu.RelaMind.chatmemory.CassandraBasedChatMemory;
 import io.el12stu.RelaMind.rag.QueryRewriter;
+import io.el12stu.RelaMind.service.IntentDetectionService;
+import io.el12stu.RelaMind.service.IntentDetectionResult;
+import io.el12stu.RelaMind.service.IntentDetectionResult.ChatIntent;
 import io.el12stu.RelaMind.service.SensitiveWordService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -35,10 +38,37 @@ public class RelaMindApp {
 
 
 
-    private static final String SYSTEM_PROMPT = "扮演深耕恋爱心理领域的专家。开场向用户表明身份，告知用户可倾诉恋爱难题。" +
-            "围绕单身、恋爱、已婚三种状态提问：单身状态询问社交圈拓展及追求心仪对象的困扰；" +
-            "恋爱状态询问沟通、习惯差异引发的矛盾；已婚状态询问家庭责任与亲属关系处理的问题。" +
-            "引导用户详述事情经过、对方反应及自身想法，以便给出专属解决方案。";
+    // 普通聊天的 System Prompt - 定位为成长伙伴
+    private static final String SYSTEM_PROMPT = 
+        "你是用户的AI成长伙伴，名叫RelaMind。你的使命是帮助用户记录成长、理解自己、成为更好的自己。\n\n" +
+        "核心职责：\n" +
+        "1. **日常陪伴**：倾听用户的心声，给予情感支持和理解\n" +
+        "2. **引导记录**：鼓励用户记录生活点滴，帮助用户养成记录习惯\n" +
+        "3. **成长分析**：当用户询问历史或模式时，主动检索相关记录并给出洞察\n" +
+        "4. **主动关怀**：记住用户的重要信息（如目标、困扰、重要日期），适时关心\n\n" +
+        "对话风格：\n" +
+        "- 温暖、真诚、有洞察力，像一位了解用户的老朋友\n" +
+        "- 不要过于正式，用自然、亲切的语气交流\n" +
+        "- 善于提问，引导用户深入思考\n" +
+        "- 当用户分享经历时，可以建议记录下来，方便以后回顾\n\n" +
+        "特殊能力：\n" +
+        "- 你可以访问用户的历史记录（日记、笔记等），当用户询问过去的事情时，主动检索相关记录\n" +
+        "- 你可以识别用户的成长模式，帮助用户理解自己的行为规律\n" +
+        "- 你可以基于历史数据给出个性化建议，而不是泛泛而谈\n\n" +
+        "开场：初次见面时，简单介绍自己，询问用户今天想聊什么，或者是否想记录些什么。";
+
+    // RAG 专用的 System Prompt（更聚焦于历史分析）
+    private static final String RAG_SYSTEM_PROMPT = 
+        "你是用户的AI成长伙伴，正在基于用户的历史记录回答问题。\n\n" +
+        "你的任务：\n" +
+        "1. 仔细分析检索到的历史记录，找出与用户问题相关的信息\n" +
+        "2. 如果找到相关信息，用具体的时间、事件来回答，让用户感受到你真正了解他的过去\n" +
+        "3. 如果信息不足，诚实地告诉用户，并建议他记录更多相关内容\n" +
+        "4. 尝试发现模式：如果用户多次遇到类似情况，可以指出这个模式\n" +
+        "5. 给出基于历史的建议：告诉用户之前是怎么处理的，效果如何\n\n" +
+        "回答风格：\n" +
+        "- 引用具体的时间、事件，让回答更有说服力\n" +
+        "- 例如：'根据你2023年3月的记录，当时你...' 或 '我注意到你在过去一年中...'";
 
     /**
      * 初始化 ChatClient
@@ -141,6 +171,10 @@ public class RelaMindApp {
     @Resource
     private QueryRewriter queryRewriter;
 
+    // 意图识别服务
+    @Resource
+    private IntentDetectionService intentDetectionService;
+
     /**
      * 和 RAG 知识库进行对话
      *
@@ -153,6 +187,7 @@ public class RelaMindApp {
         String rewrittenMessage = queryRewriter.doQueryRewrite(message);
         ChatResponse chatResponse = chatClient
                 .prompt()
+                .system(RAG_SYSTEM_PROMPT)  // 使用 RAG 专用 Prompt
                 // 使用改写后的查询
                 .user(rewrittenMessage)
                 .advisors(spec -> spec.param(ChatMemory.CONVERSATION_ID, chatId))
@@ -171,8 +206,38 @@ public class RelaMindApp {
                 .call()
                 .chatResponse();
         String content = chatResponse.getResult().getOutput().getText();
-        log.info("content: {}", content);
+        log.info("RAG 回答: {}", content);
         return content;
+    }
+
+    /**
+     * RAG 流式版本
+     */
+    public Flux<String> doChatWithRagByStream(String message, String chatId) {
+        String rewrittenMessage = queryRewriter.doQueryRewrite(message);
+        return chatClient
+                .prompt()
+                .system(RAG_SYSTEM_PROMPT)
+                .user(rewrittenMessage)
+                .advisors(spec -> spec.param(ChatMemory.CONVERSATION_ID, chatId))
+                .advisors(new QuestionAnswerAdvisor(RelaMindappvectorstore))
+                .stream()
+                .content()
+                .concatWith(Flux.just("[DONE]"));
+    }
+
+    /**
+     * 工具调用流式版本
+     */
+    public Flux<String> doChatWithToolsByStream(String message, String chatId) {
+        return chatClient
+                .prompt()
+                .user(message)
+                .advisors(spec -> spec.param(ChatMemory.CONVERSATION_ID, chatId))
+                .toolCallbacks(allTools)
+                .stream()
+                .content()
+                .concatWith(Flux.just("[DONE]"));
     }
 
     // AI 调用工具能力
@@ -222,5 +287,85 @@ public class RelaMindApp {
         String content = chatResponse.getResult().getOutput().getText();
         log.info("content: {}", content);
         return content;
+    }
+
+    /**
+     * 智能聊天路由 - 根据用户意图自动选择最合适的聊天方式
+     * 
+     * @param message 用户消息
+     * @param chatId 会话ID
+     * @return AI回复
+     */
+    public String smartChat(String message, String chatId) {
+        IntentDetectionResult intentResult = intentDetectionService.detectIntent(message);
+        ChatIntent intent = intentResult.getIntent();
+        double confidence = intentResult.getConfidence();
+        boolean needConfirmation = intentResult.getNeedConfirmation();
+        
+        log.info("智能路由 - 意图: {}, 置信度: {}, 需要确认: {}, 理由: {}", 
+            intent, confidence, needConfirmation, intentResult.getReason());
+
+        // 如果置信度低，在回复中询问用户确认
+        String confirmationPrompt = needConfirmation 
+            ? "\n\n[系统提示：我对你的意图理解可能不够准确，如果这不是你想要的，请告诉我。]" 
+            : "";
+
+        String response = switch (intent) {
+            case RAG_QUERY -> {
+                // 使用 RAG 检索历史记录
+                log.info("使用 RAG 模式回答");
+                yield doChatWithRag(message, chatId);
+            }
+            case TOOL_CALL -> {
+                // 使用工具调用
+                log.info("使用工具调用模式");
+                yield doChatWithTools(message, chatId);
+            }
+            case NORMAL_CHAT -> {
+                // 普通聊天
+                log.info("使用普通聊天模式");
+                yield doChat(message, chatId);
+            }
+        };
+
+        return response + confirmationPrompt;
+    }
+
+    /**
+     * 智能聊天路由 - 流式版本
+     */
+    public Flux<String> smartChatByStream(String message, String chatId) {
+        IntentDetectionResult intentResult = intentDetectionService.detectIntent(message);
+        ChatIntent intent = intentResult.getIntent();
+        double confidence = intentResult.getConfidence();
+        boolean needConfirmation = intentResult.getNeedConfirmation();
+        
+        log.info("智能路由（流式） - 意图: {}, 置信度: {}, 需要确认: {}, 理由: {}", 
+            intent, confidence, needConfirmation, intentResult.getReason());
+
+        Flux<String> response = switch (intent) {
+            case RAG_QUERY -> {
+                // RAG 流式返回
+                log.info("使用 RAG 模式回答（流式）");
+                yield doChatWithRagByStream(message, chatId);
+            }
+            case TOOL_CALL -> {
+                // 工具调用流式返回
+                log.info("使用工具调用模式（流式）");
+                yield doChatWithToolsByStream(message, chatId);
+            }
+            case NORMAL_CHAT -> {
+                // 普通聊天流式返回
+                log.info("使用普通聊天模式（流式）");
+                yield doChatByStream(message, chatId);
+            }
+        };
+
+        // 如果置信度低，在最后添加确认提示
+        if (needConfirmation) {
+            return response.concatWith(Flux.just("\n\n[系统提示：我对你的意图理解可能不够准确，如果这不是你想要的，请告诉我。]"));
+        }
+        
+        return response;
     }
 }

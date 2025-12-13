@@ -49,9 +49,13 @@ public class PDFGenerationTool {
                 // 添加段落并关闭文档
                 document.add(paragraph);
             }
-            return "PDF generated successfully to: " + filePath;
+            // 返回 JSON 格式的文件信息，便于前端显示下载链接
+            return String.format("{\"success\":true,\"type\":\"pdf\",\"fileName\":\"%s\",\"filePath\":\"%s\",\"message\":\"PDF文件已成功生成\"}", 
+                    fileName.replace("\\", "\\\\").replace("\"", "\\\""), 
+                    filePath.replace("\\", "\\\\").replace("\"", "\\\""));
         } catch (IOException e) {
-            return "Error generating PDF: " + e.getMessage();
+            return String.format("{\"success\":false,\"error\":\"%s\"}", 
+                    e.getMessage().replace("\\", "\\\\").replace("\"", "\\\""));
         }
     }
 }

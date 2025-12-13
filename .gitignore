@@ -1,6 +1,11 @@
 ### CUSTOM ###
 application-local.yml
+application-prod.yml
 tmp
+
+# Docker
+.env
+docker-compose.override.yml
 
 HELP.md
 target/

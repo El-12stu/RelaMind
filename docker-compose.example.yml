@@ -1,0 +1,99 @@
+version: '3.8'
+
+# 这是 docker-compose.yml 的示例文件
+# 复制此文件为 docker-compose.yml 并根据需要修改环境变量
+
+services:
+  # PostgreSQL with PgVector extension
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: relamind-postgres
+    environment:
+      POSTGRES_USER: relamind          # 可自定义
+      POSTGRES_PASSWORD: relamind123   # ⚠️ 生产环境请修改为强密码
+      POSTGRES_DB: relamind
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U relamind"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - relamind-network
+
+  # Cassandra for chat memory
+  cassandra:
+    image: cassandra:4.1
+    container_name: relamind-cassandra
+    environment:
+      CASSANDRA_CLUSTER_NAME: RelaMind
+      CASSANDRA_DC: datacenter1
+      CASSANDRA_RACK: rack1
+      CASSANDRA_USERNAME: cassandra    # 可自定义
+      CASSANDRA_PASSWORD: cassandra    # ⚠️ 生产环境请修改为强密码
+    ports:
+      - "9042:9042"
+    volumes:
+      - cassandra_data:/var/lib/cassandra
+    healthcheck:
+      test: ["CMD-SHELL", "cqlsh -u cassandra -p cassandra -e 'describe cluster' || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - relamind-network
+
+  # Backend Spring Boot Application
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: relamind-backend
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/relamind
+      SPRING_DATASOURCE_USERNAME: relamind
+      SPRING_DATASOURCE_PASSWORD: relamind123
+      SPRING_CASSANDRA_CONTACT_POINTS: cassandra:9042
+      SPRING_CASSANDRA_USERNAME: cassandra
+      SPRING_CASSANDRA_PASSWORD: cassandra
+      SPRING_AI_DASHSCOPE_API_KEY: your-api-key-here  # ⚠️ 必须配置你的 API Key
+      SERVER_PORT: 8123
+    ports:
+      - "8123:8123"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      cassandra:
+        condition: service_healthy
+    volumes:
+      - ./tmp:/app/tmp  # 文件存储目录
+    networks:
+      - relamind-network
+    restart: unless-stopped
+
+  # Frontend Vue Application
+  frontend:
+    build:
+      context: ./ai-agent-frontend
+      dockerfile: Dockerfile
+    container_name: relamind-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - relamind-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  cassandra_data:
+
+networks:
+  relamind-network:
+    driver: bridge
+

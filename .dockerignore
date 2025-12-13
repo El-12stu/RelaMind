@@ -1,0 +1,61 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# IDE
+.idea
+.vscode
+*.iml
+*.iws
+*.ipr
+
+# Build outputs
+target/
+dist/
+build/
+*.jar
+*.war
+*.ear
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Documentation
+README.md
+docs/
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Node modules (for frontend)
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Maven
+.mvn/
+mvnw
+mvnw.cmd
+
+# Environment files
+.env
+.env.local
+*.env
+
+# Test files
+*.test
+test/
+

@@ -27,6 +27,33 @@ const routes = [
       title: 'AI超级智能体 - RelaMind',
       description: 'AI超级智能体是全能助手，能解答各类专业问题'
     }
+  },
+  {
+    path: '/diary',
+    name: 'Diary',
+    component: () => import('../views/Diary.vue'),
+    meta: {
+      title: '记录心情 - RelaMind',
+      description: '记录你的感想和心情，让 RelaMind 更好地了解你'
+    }
+  },
+  {
+    path: '/terms',
+    name: 'Terms',
+    component: () => import('../views/Terms.vue'),
+    meta: {
+      title: '用户协议 - RelaMind',
+      description: 'RelaMind 用户协议'
+    }
+  },
+  {
+    path: '/privacy',
+    name: 'Privacy',
+    component: () => import('../views/Privacy.vue'),
+    meta: {
+      title: '隐私政策 - RelaMind',
+      description: 'RelaMind 隐私政策'
+    }
   }
 ]
 

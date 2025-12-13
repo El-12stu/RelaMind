@@ -17,15 +17,17 @@ html, body {
   font-family: 'PingFang SC', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
   font-size: 16px;
   color: #333;
-  background-color: #f0f2f5;
+  background-color: transparent;
   width: 100%;
   height: 100%;
   overflow-x: hidden;
+  margin: 0;
+  padding: 0;
 }
 
 #app {
   width: 100%;
-  height: 100%;
+  min-height: 100vh;
 }
 
 a {
@@ -50,23 +52,24 @@ button {
   }
 }
 
-/* 滚动条样式 */
+/* 滚动条样式 - 深色主题 */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f1f1;
+  background: rgba(255, 255, 255, 0.05);
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #ccc;
+  background: rgba(102, 126, 234, 0.4);
   border-radius: 3px;
+  transition: background 0.3s;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #aaa;
+  background: rgba(102, 126, 234, 0.6);
 }
 </style>

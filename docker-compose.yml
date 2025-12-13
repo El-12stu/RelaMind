@@ -1,0 +1,96 @@
+version: '3.8'
+
+services:
+  # PostgreSQL with PgVector extension
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: relamind-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-relamind}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-relamind123}
+      POSTGRES_DB: ${POSTGRES_DB:-relamind}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U relamind"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - relamind-network
+
+  # Cassandra for chat memory
+  cassandra:
+    image: cassandra:4.1
+    container_name: relamind-cassandra
+    environment:
+      CASSANDRA_CLUSTER_NAME: ${CASSANDRA_CLUSTER_NAME:-RelaMind}
+      CASSANDRA_DC: ${CASSANDRA_DC:-datacenter1}
+      CASSANDRA_RACK: ${CASSANDRA_RACK:-rack1}
+      CASSANDRA_USERNAME: ${CASSANDRA_USERNAME:-cassandra}
+      CASSANDRA_PASSWORD: ${CASSANDRA_PASSWORD:-cassandra}
+    ports:
+      - "9042:9042"
+    volumes:
+      - cassandra_data:/var/lib/cassandra
+    healthcheck:
+      test: ["CMD-SHELL", "cqlsh -u cassandra -p cassandra -e 'describe cluster' || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - relamind-network
+
+  # Backend Spring Boot Application
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: relamind-backend
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-relamind}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-relamind}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-relamind123}
+      SPRING_CASSANDRA_CONTACT_POINTS: cassandra:9042
+      SPRING_CASSANDRA_USERNAME: ${CASSANDRA_USERNAME:-cassandra}
+      SPRING_CASSANDRA_PASSWORD: ${CASSANDRA_PASSWORD:-cassandra}
+      SPRING_AI_DASHSCOPE_API_KEY: ${DASHSCOPE_API_KEY}
+      SERVER_PORT: 8123
+    ports:
+      - "8123:8123"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      cassandra:
+        condition: service_healthy
+    volumes:
+      - ./tmp:/app/tmp  # 文件存储目录
+    networks:
+      - relamind-network
+    restart: unless-stopped
+
+  # Frontend Vue Application
+  frontend:
+    build:
+      context: ./ai-agent-frontend
+      dockerfile: Dockerfile
+    container_name: relamind-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - relamind-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  cassandra_data:
+
+networks:
+  relamind-network:
+    driver: bridge
+

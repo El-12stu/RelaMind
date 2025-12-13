@@ -124,4 +124,44 @@ class RelaMindAppTest {
         //String answer =  relaMindApp.doChatWithMcp(message, chatId);
         Assertions.assertNotNull(answer);
     }
+
+    /**
+     * 智能路由测试
+     * 测试系统能否根据用户意图自动选择最合适的处理方式
+     */
+    @Test
+    void testSmartChat() {
+        String chatId = UUID.randomUUID().toString();
+        
+        // 测试普通聊天
+        String message1 = "今天心情不错";
+        String answer1 = relaMindApp.smartChat(message1, chatId);
+        Assertions.assertNotNull(answer1);
+        System.out.println("普通聊天测试: " + message1);
+        System.out.println("回答: " + answer1);
+        System.out.println("---");
+        
+        // 测试 RAG 查询（历史记录）
+        String message2 = "我去年这个时候在做什么？";
+        String answer2 = relaMindApp.smartChat(message2, chatId);
+        Assertions.assertNotNull(answer2);
+        System.out.println("RAG 查询测试: " + message2);
+        System.out.println("回答: " + answer2);
+        System.out.println("---");
+        
+        // 测试工具调用
+        String message3 = "帮我搜索一下今天的天气";
+        String answer3 = relaMindApp.smartChat(message3, chatId);
+        Assertions.assertNotNull(answer3);
+        System.out.println("工具调用测试: " + message3);
+        System.out.println("回答: " + answer3);
+        System.out.println("---");
+        
+        // 测试历史查询（另一种表达）
+        String message4 = "我之前是怎么解决类似问题的？";
+        String answer4 = relaMindApp.smartChat(message4, chatId);
+        Assertions.assertNotNull(answer4);
+        System.out.println("历史查询测试: " + message4);
+        System.out.println("回答: " + answer4);
+    }
 }

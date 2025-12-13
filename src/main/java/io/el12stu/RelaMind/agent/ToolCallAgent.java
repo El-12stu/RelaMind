@@ -18,6 +18,7 @@ import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.tool.ToolCallback;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -34,6 +35,9 @@ public class ToolCallAgent extends ReActAgent {
 
     // 保存工具调用信息的响应结果（要调用那些工具）
     private ChatResponse toolCallChatResponse;
+    
+    // 保存当前步骤的思考内容
+    private String currentThought = "";
 
     // 工具调用管理者
     private final ToolCallingManager toolCallingManager;
@@ -83,21 +87,23 @@ public class ToolCallAgent extends ReActAgent {
             List<AssistantMessage.ToolCall> toolCallList = assistantMessage.getToolCalls();
             // 输出提示信息
             String result = assistantMessage.getText();
-            log.info(getName() + "的思考：" + result);
+            // 保存思考内容，供 step() 方法使用
+            this.currentThought = result != null ? result : "";
+            log.info(getName() + "的思考：" + this.currentThought);
             log.info(getName() + "选择了 " + toolCallList.size() + " 个工具来使用");
             String toolCallInfo = toolCallList.stream()
                     .map(toolCall -> String.format("工具名称：%s，参数：%s", toolCall.name(), toolCall.arguments()))
                     .collect(Collectors.joining("\n"));
             log.info(toolCallInfo);
-            // 如果不需要调用工具，返回 false
+            
+            // 如果没有工具调用，返回格式化的思考结果
             if (toolCallList.isEmpty()) {
                 // 只有不调用工具时，才需要手动记录助手消息
                 getMessageList().add(assistantMessage);
                 return false;
-            } else {
-                // 需要调用工具时，无需记录助手消息，因为调用工具时会自动记录
-                return true;
             }
+            // 需要调用工具时，无需记录助手消息，因为调用工具时会自动记录
+            return true;
         } catch (Exception e) {
             log.error(getName() + "的思考过程遇到了问题：" + e.getMessage());
             getMessageList().add(new AssistantMessage("处理时遇到了错误：" + e.getMessage()));
@@ -108,12 +114,12 @@ public class ToolCallAgent extends ReActAgent {
     /**
      * 执行工具调用并处理结果
      *
-     * @return 执行结果
+     * @return 执行结果（格式化的 JSON 字符串，包含工具名称列表和简要结果）
      */
     @Override
     public String act() {
         if (!toolCallChatResponse.hasToolCalls()) {
-            return "没有工具需要调用";
+            return "{\"action\":\"无需执行行动\"}";
         }
         // 调用工具
         Prompt prompt = new Prompt(getMessageList(), this.chatOptions);
@@ -127,12 +133,100 @@ public class ToolCallAgent extends ReActAgent {
         if (terminateToolCalled) {
             // 任务结束，更改状态
             setState(AgentState.FINISHED);
+            
+            // 尝试从消息历史中提取最终答案（最后一次助手消息的文本）
+            String finalAnswer = "";
+            if (getMessageList() != null && !getMessageList().isEmpty()) {
+                for (int i = getMessageList().size() - 1; i >= 0; i--) {
+                    org.springframework.ai.chat.messages.Message msg = getMessageList().get(i);
+                    if (msg instanceof org.springframework.ai.chat.messages.AssistantMessage) {
+                        String text = ((org.springframework.ai.chat.messages.AssistantMessage) msg).getText();
+                        if (text != null && !text.trim().isEmpty() && !text.contains("doTerminate")) {
+                            finalAnswer = text;
+                            break;
+                        }
+                    }
+                }
+            }
+            
+            // 提取工具名称列表
+            List<String> toolNames = toolResponseMessage.getResponses().stream()
+                    .map(response -> response.name())
+                    .collect(Collectors.toList());
+            
+            // 构建包含最终答案的 JSON
+            String toolNamesStr = String.join(", ", toolNames);
+            String result;
+            if (!finalAnswer.isEmpty()) {
+                result = String.format("{\"action\":\"任务完成\",\"tools\":[%s],\"answer\":\"%s\"}", 
+                        toolNames.stream()
+                                .map(name -> "\"" + name + "\"")
+                                .collect(Collectors.joining(",")),
+                        finalAnswer.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n"));
+            } else {
+                result = String.format("{\"action\":\"任务完成\",\"tools\":[%s]}", 
+                        toolNames.stream()
+                                .map(name -> "\"" + name + "\"")
+                                .collect(Collectors.joining(",")));
+            }
+            
+            log.info("任务完成，调用的工具: {}", toolNamesStr);
+            return result;
         }
-        String results = toolResponseMessage.getResponses().stream()
+        
+        // 提取工具名称列表（不包含详细结果，避免前端显示过多技术细节）
+        List<String> toolNames = toolResponseMessage.getResponses().stream()
+                .map(response -> response.name())
+                .collect(Collectors.toList());
+        
+        // 检测文件生成工具（writeFile, generatePDF），提取文件信息
+        List<String> fileInfos = new ArrayList<>();
+        for (var response : toolResponseMessage.getResponses()) {
+            String toolName = response.name();
+            String responseData = response.responseData();
+            
+            // 检查是否是文件生成工具
+            if (("writeFile".equals(toolName) || "generatePDF".equals(toolName)) && responseData != null) {
+                // 尝试解析 JSON 格式的响应
+                try {
+                    // 检查是否是 JSON 格式
+                    if (responseData.trim().startsWith("{")) {
+                        // 提取文件信息（简化处理，直接使用响应数据）
+                        fileInfos.add(responseData);
+                    }
+                } catch (Exception e) {
+                    log.warn("解析文件信息失败: {}", e.getMessage());
+                }
+            }
+        }
+        
+        // 构建简化的结果 JSON（只包含工具名称，不包含详细响应数据）
+        String toolNamesStr = String.join(", ", toolNames);
+        StringBuilder resultBuilder = new StringBuilder();
+        resultBuilder.append("{\"action\":\"调用工具\",\"tools\":[");
+        resultBuilder.append(toolNames.stream()
+                .map(name -> "\"" + name + "\"")
+                .collect(Collectors.joining(",")));
+        resultBuilder.append("]");
+        
+        // 如果有文件信息，添加到结果中
+        if (!fileInfos.isEmpty()) {
+            resultBuilder.append(",\"files\":[");
+            resultBuilder.append(String.join(",", fileInfos));
+            resultBuilder.append("]");
+        }
+        
+        resultBuilder.append("}");
+        String result = resultBuilder.toString();
+        
+        // 详细结果只记录到日志，不返回给前端
+        String detailedResults = toolResponseMessage.getResponses().stream()
                 .map(response -> "工具 " + response.name() + " 返回的结果：" + response.responseData())
                 .collect(Collectors.joining("\n"));
-        log.info(results);
-        return results;
+        log.info("调用的工具: {}", toolNamesStr);
+        log.info("详细结果（仅日志）: {}", detailedResults);
+        
+        return result;
     }
 
     /**

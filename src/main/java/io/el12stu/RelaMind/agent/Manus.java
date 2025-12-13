@@ -49,7 +49,7 @@ public class Manus extends ToolCallAgent {
         this.setNextStepPrompt(NEXT_STEP_PROMPT);
 
         // 增加步数以应对复杂任务
-        this.setMaxSteps(5);
+        this.setMaxSteps(10);
 
         // 初始化 AI 对话客户端
         ChatClient.Builder builder = ChatClient.builder(dashscopeChatModel)

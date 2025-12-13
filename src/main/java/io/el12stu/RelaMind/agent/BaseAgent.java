@@ -133,24 +133,40 @@ public abstract class BaseAgent {
                     log.info("Executing step {}/{}", stepNumber, maxSteps);
                     // 单步执行
                     String stepResult = step();
-                    String result = "Step " + stepNumber + ": " + stepResult;
+                    // 如果 stepResult 已经是 JSON 格式，添加 step 字段；否则包装成 JSON
+                    String result;
+                    if (stepResult.trim().startsWith("{")) {
+                        // 已经是 JSON，添加 step 字段
+                        result = String.format("{\"step\":%d,%s}", stepNumber, stepResult.substring(1));
+                    } else {
+                        // 不是 JSON，包装成 JSON
+                        result = String.format("{\"step\":%d,\"content\":\"%s\"}", stepNumber, 
+                                stepResult.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n"));
+                    }
                     results.add(result);
-                    // 输出当前每一步的结果到 SSE
-                    sseEmitter.send(result);
+                    // 输出当前每一步的结果到 SSE（每个 JSON 对象后添加换行符，便于前端解析）
+                    sseEmitter.send(result + "\n");
                 }
                 // 检查是否超出步骤限制
-                if (currentStep >= maxSteps) {
+                if (currentStep >= maxSteps && state != AgentState.FINISHED) {
                     state = AgentState.FINISHED;
                     results.add("Terminated: Reached max steps (" + maxSteps + ")");
-                    sseEmitter.send("执行结束：达到最大步骤（" + maxSteps + "）");
+                    // 发送完成消息（JSON 格式）
+                    String completionMsg = String.format("{\"step\":%d,\"action\":\"执行结束\",\"message\":\"达到最大步骤（%d）\"}\n", 
+                            currentStep, maxSteps);
+                    sseEmitter.send(completionMsg);
                 }
-                // 正常完成
+                // 正常完成，发送 [DONE] 标记
+                sseEmitter.send("[DONE]\n");
                 sseEmitter.complete();
             } catch (Exception e) {
                 state = AgentState.ERROR;
                 log.error("error executing agent", e);
                 try {
-                    sseEmitter.send("执行错误：" + e.getMessage());
+                    String errorMsg = String.format("{\"step\":%d,\"action\":\"执行错误\",\"error\":\"%s\"}\n", 
+                            currentStep, e.getMessage().replace("\"", "\\\"").replace("\n", "\\n"));
+                    sseEmitter.send(errorMsg);
+                    sseEmitter.send("[DONE]\n");
                     sseEmitter.complete();
                 } catch (IOException ex) {
                     sseEmitter.completeWithError(ex);

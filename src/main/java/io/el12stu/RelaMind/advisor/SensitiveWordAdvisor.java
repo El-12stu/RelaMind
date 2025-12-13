@@ -10,13 +10,13 @@ import org.springframework.ai.chat.client.advisor.api.StreamAdvisor;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisorChain;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.lang.NonNull;
 import reactor.core.publisher.Flux;
 
-import java.lang.reflect.Constructor;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -27,18 +27,18 @@ import java.util.List;
 public class SensitiveWordAdvisor implements CallAdvisor, StreamAdvisor {
 
 	private final SensitiveWordService sensitiveWordService;
-	private final ChatModel dashscopeChatModel;
 
 	private static final String ERROR_MESSAGE = "[系统安全提示]：您的输入包含敏感内容，请求已被拦截。";
 
-	public SensitiveWordAdvisor(SensitiveWordService sensitiveWordService, ChatModel dashscopeChatModel) {
+	public SensitiveWordAdvisor(SensitiveWordService sensitiveWordService, @SuppressWarnings("unused") org.springframework.ai.chat.model.ChatModel dashscopeChatModel) {
 		this.sensitiveWordService = sensitiveWordService;
-		this.dashscopeChatModel = dashscopeChatModel;
 	}
 
 	@Override
+	@NonNull
 	public String getName() {
-		return this.getClass().getSimpleName();
+		String name = this.getClass().getSimpleName();
+		return name != null ? name : "SensitiveWordAdvisor";
 	}
 
 	@Override
@@ -79,67 +79,40 @@ public class SensitiveWordAdvisor implements CallAdvisor, StreamAdvisor {
 
 	/**
 	 * 创建包含错误信息的 ChatClientResponse
-	 * 通过 ChatModel 创建一个包含错误消息的响应
+	 * 采用直接构造方法，实现零 API 调用拦截。
+	 * 依赖 Spring AI 库中 ChatClientResponse 的 Record 公共构造函数签名:
+	 * public ChatClientResponse(@Nullable ChatResponse chatResponse, Map<String, Object> context)
 	 */
-	private ChatClientResponse createErrorClientResponse(ChatClientRequest request) {
+	@NonNull
+	private ChatClientResponse createErrorClientResponse(@NonNull ChatClientRequest request) {
 		try {
-			// 创建一个包含错误消息的 Prompt
+			// 1. 构造包含错误消息的 ChatResponse 对象
 			AssistantMessage errorMessage = new AssistantMessage(ERROR_MESSAGE);
 			Generation generation = new Generation(errorMessage);
 			ChatResponse chatResponse = new ChatResponse(List.of(generation));
 			
-			// 尝试使用反射创建 ChatClientResponse 实例
-			// 首先尝试找到构造方法
-			Constructor<ChatClientResponse> constructor = ChatClientResponse.class.getDeclaredConstructor(
-					ChatClientRequest.class, ChatResponse.class);
-			constructor.setAccessible(true);
-			return constructor.newInstance(request, chatResponse);
-		} catch (NoSuchMethodException e) {
-			// 如果找不到构造方法，尝试其他方式
-			log.warn("无法通过反射创建 ChatClientResponse，尝试其他方式", e);
-			try {
-				// 修改响应内容为错误消息
-				AssistantMessage errorMessage = new AssistantMessage(ERROR_MESSAGE);
-				Generation generation = new Generation(errorMessage);
-				ChatResponse errorResponse = new ChatResponse(List.of(generation));
-				
-				// 再次尝试反射，尝试只有 ChatResponse 参数的构造方法
-				Constructor<ChatClientResponse> constructor = ChatClientResponse.class.getDeclaredConstructor(
-						ChatResponse.class);
-				constructor.setAccessible(true);
-				return constructor.newInstance(errorResponse);
-			} catch (Exception ex) {
-				log.error("创建错误响应失败，将抛出异常", ex);
-				// 作为最后的手段，我们创建一个包含错误消息的 Prompt 并调用模型
-				// 这会实际调用模型，但至少能返回错误消息
-				// 注意：这不符合"完全跳过大模型 API 调用"的要求，但在无法创建 ChatClientResponse 的情况下的备选方案
-				Prompt errorPrompt = new Prompt(List.of(new UserMessage(ERROR_MESSAGE)));
-				ChatResponse chatResponse = dashscopeChatModel.call(errorPrompt);
-				// 由于无法直接创建 ChatClientResponse，我们尝试最后一次反射
-				try {
-					Constructor<ChatClientResponse> constructor = ChatClientResponse.class.getDeclaredConstructor(
-							ChatClientRequest.class, ChatResponse.class);
-					constructor.setAccessible(true);
-					return constructor.newInstance(request, chatResponse);
-				} catch (Exception finalEx) {
-					throw new RuntimeException("无法创建 ChatClientResponse，请检查 Spring AI 版本和 API", finalEx);
-				}
-			}
+			// 2. 使用当前 Spring AI 版本最稳定的公共构造函数直接实例化，
+			//    实现对大模型的零 API 调用。
+			//    我们提供 chatResponse 和一个空的 context Map。
+			return new ChatClientResponse(chatResponse, Collections.emptyMap());
+			
 		} catch (Exception e) {
-			log.error("创建错误响应失败", e);
-			throw new RuntimeException("无法创建错误响应", e);
+			// 如果这里仍然失败，说明 ChatClientResponse 的公共构造函数签名仍然不同。
+			log.error("无法通过公共构造函数创建 ChatClientResponse，请检查 Spring AI 依赖版本。", e);
+			throw new RuntimeException("无法创建 ChatClientResponse，请检查 Spring AI 版本和 API", e);
 		}
 	}
 
 	@Override
-	public ChatClientResponse adviseCall(ChatClientRequest chatClientRequest, CallAdvisorChain chain) {
+	@NonNull
+	public ChatClientResponse adviseCall(@NonNull ChatClientRequest chatClientRequest, @NonNull CallAdvisorChain chain) {
 		// 提取用户输入文本
 		String userInput = extractUserInput(chatClientRequest);
 
 		// 检查是否包含敏感词
 		if (sensitiveWordService.containsSensitiveWords(userInput)) {
 			log.warn("检测到敏感词，已拦截请求。用户输入: {}", userInput);
-			// 返回合成的错误响应，阻止 chain.nextCall 的执行
+			// 直接返回错误响应，实现零 API 调用拦截
 			return createErrorClientResponse(chatClientRequest);
 		}
 
@@ -148,14 +121,15 @@ public class SensitiveWordAdvisor implements CallAdvisor, StreamAdvisor {
 	}
 
 	@Override
-	public Flux<ChatClientResponse> adviseStream(ChatClientRequest chatClientRequest, StreamAdvisorChain chain) {
+	@NonNull
+	public Flux<ChatClientResponse> adviseStream(@NonNull ChatClientRequest chatClientRequest, @NonNull StreamAdvisorChain chain) {
 		// 提取用户输入文本
 		String userInput = extractUserInput(chatClientRequest);
 
 		// 检查是否包含敏感词
 		if (sensitiveWordService.containsSensitiveWords(userInput)) {
 			log.warn("检测到敏感词，已拦截流式请求。用户输入: {}", userInput);
-			// 返回合成的错误响应，包装在 Flux 中
+			// 直接返回错误响应，实现零 API 调用拦截
 			ChatClientResponse errorResponse = createErrorClientResponse(chatClientRequest);
 			return Flux.just(errorResponse);
 		}

@@ -32,9 +32,13 @@ public class FileOperationTool {
             // 创建目录
             FileUtil.mkdir(FILE_DIR);
             FileUtil.writeUtf8String(content, filePath);
-            return "File written successfully to: " + filePath;
+            // 返回 JSON 格式的文件信息，便于前端显示下载链接
+            return String.format("{\"success\":true,\"type\":\"file\",\"fileName\":\"%s\",\"filePath\":\"%s\",\"message\":\"文件已成功保存\"}", 
+                    fileName.replace("\\", "\\\\").replace("\"", "\\\""), 
+                    filePath.replace("\\", "\\\\").replace("\"", "\\\""));
         } catch (Exception e) {
-            return "Error writing to file: " + e.getMessage();
+            return String.format("{\"success\":false,\"error\":\"%s\"}", 
+                    e.getMessage().replace("\\", "\\\\").replace("\"", "\\\""));
         }
     }
 }
