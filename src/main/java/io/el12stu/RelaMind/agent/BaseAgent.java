@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executors;
 
 /**
  * 抽象基础代理类，用于管理代理状态和执行流程。
@@ -100,7 +101,8 @@ public abstract class BaseAgent {
     public SseEmitter runStream(String userPrompt) {
         // 创建一个超时时间较长的 SseEmitter
         SseEmitter sseEmitter = new SseEmitter(300000L); // 5 分钟超时
-        // 使用线程异步处理，避免阻塞主线程
+        // 使用虚拟线程异步处理，避免阻塞主线程
+        // 虚拟线程适合IO密集型任务，如与远程LLM交互和工具调用中的网络请求
         CompletableFuture.runAsync(() -> {
             // 1、基础校验
             try {
@@ -157,7 +159,7 @@ public abstract class BaseAgent {
                 // 3、清理资源
                 this.cleanup();
             }
-        });
+        }, Executors.newVirtualThreadPerTaskExecutor());
 
         // 设置超时回调
         sseEmitter.onTimeout(() -> {
