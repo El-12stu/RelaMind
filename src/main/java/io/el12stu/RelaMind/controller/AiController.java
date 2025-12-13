@@ -3,8 +3,10 @@ package io.el12stu.RelaMind.controller;
 import io.el12stu.RelaMind.agent.Manus;
 import io.el12stu.RelaMind.app.RelaMindApp;
 import jakarta.annotation.Resource;
+import jakarta.inject.Provider;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -22,11 +24,9 @@ public class AiController {
     @Resource
     private RelaMindApp relaMindApp;
 
-    @Resource
-    private ToolCallback[] allTools;
-
-    @Resource
-    private ChatModel dashscopeChatModel;
+    // Controller 持有的是工厂，而不是产品本身
+    @Autowired
+    private Provider<Manus> manusProvider;
 
     /**
      * 同步调用RelaMind应用
@@ -99,7 +99,8 @@ public class AiController {
      */
     @GetMapping("/manus/chat")
     public SseEmitter doChatWithManus(String message) {
-        Manus manus = new Manus(allTools, dashscopeChatModel);
+        // <-- 每次都从Spring获取一个新的实例
+        Manus manus = manusProvider.get();
         return manus.runStream(message);
     }
 }

@@ -4,12 +4,14 @@ import io.el12stu.RelaMind.advisor.MyLoggerAdvisor;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 /**
- * AI 超级智能体（拥有自主规划能力，可以直接使用）
+ * AI 超级智能体（设置为原型，确保每次注入都是一个新的、干净的实例）
  */
 @Component
+@Scope("prototype")
 public class Manus extends ToolCallAgent {
 
     public Manus(ToolCallback[] allTools, ChatModel dashscopeChatModel) {
