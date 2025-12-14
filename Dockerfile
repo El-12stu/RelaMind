@@ -35,4 +35,5 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://localhost:8123/api/swagger-ui.html || exit 1
 
 # 启动应用
-ENTRYPOINT ["java", "-jar", "app.jar"]
+# 添加 JVM 参数以解决网络连接问题（强制使用 IPv4，避免 DNS 解析问题）
+ENTRYPOINT ["java", "-Djava.net.preferIPv4Stack=true", "-Djava.net.useSystemProxies=false", "-jar", "app.jar"]

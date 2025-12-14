@@ -28,7 +28,7 @@
 
 3. **启动服务**
    ```bash
-   docker-compose -f docker-compose.prod.yml up -d
+   docker-compose -f docker-compose.yml up -d
    ```
 
 ### 方式二：直接设置环境变量
@@ -36,7 +36,7 @@
 ```bash
 export DASHSCOPE_API_KEY=sk-your-actual-api-key-here
 export POSTGRES_PASSWORD=your-strong-password-123
-docker-compose -f docker-compose.prod.yml up -d
+docker-compose -f docker-compose.yml up -d
 ```
 
 ## 🔑 配置项说明
@@ -85,13 +85,13 @@ POSTGRES_PASSWORD=new-password-123
 CASSANDRA_PASSWORD=new-password-123
 
 # 2. 停止服务
-docker-compose -f docker-compose.prod.yml down
+docker-compose -f docker-compose.yml down
 
 # 3. 删除旧数据卷（⚠️ 会删除所有数据）
-docker-compose -f docker-compose.prod.yml down -v
+docker-compose -f docker-compose.yml down -v
 
 # 4. 重新启动（会使用新密码创建数据库）
-docker-compose -f docker-compose.prod.yml up -d
+docker-compose -f docker-compose.yml up -d
 ```
 
 ### 修改 API Key
@@ -101,7 +101,7 @@ docker-compose -f docker-compose.prod.yml up -d
 DASHSCOPE_API_KEY=new-api-key-here
 
 # 2. 重启后端服务即可（无需删除数据）
-docker-compose -f docker-compose.prod.yml restart backend
+docker-compose -f docker-compose.yml restart backend
 ```
 
 ## 🎯 默认值说明
@@ -193,7 +193,7 @@ GITHUB_REPO=RelaMind
 docker exec relamind-backend env | grep SPRING
 
 # 查看日志确认配置
-docker-compose -f docker-compose.prod.yml logs backend | grep -i "api-key\|datasource"
+docker-compose -f docker-compose.yml logs backend | grep -i "api-key\|datasource"
 ```
 
 ### Q: 修改配置后需要重新构建镜像吗？

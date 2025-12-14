@@ -1,3 +1,6 @@
+# 生产环境配置 - 使用预构建的Docker镜像
+# 使用方式: docker-compose -f docker-compose.yml up -d
+
 services:
   # PostgreSQL with PgVector extension
   postgres:
@@ -42,11 +45,36 @@ services:
     networks:
       - relamind-network
 
-  # Backend Spring Boot Application
+  # Cassandra 初始化容器（创建 keyspace）
+  cassandra-init:
+    image: cassandra:4.1
+    container_name: relamind-cassandra-init
+    depends_on:
+      cassandra:
+        condition: service_healthy
+    environment:
+      CASSANDRA_USERNAME: ${CASSANDRA_USERNAME:-cassandra}
+      CASSANDRA_PASSWORD: ${CASSANDRA_PASSWORD:-cassandra}
+    volumes:
+      - ./cassandra-init.cql:/cassandra-init.cql
+    networks:
+      - relamind-network
+    entrypoint: >
+      bash -c "
+      echo 'Waiting for Cassandra to be ready...' &&
+      until cqlsh cassandra -u $${CASSANDRA_USERNAME:-cassandra} -p $${CASSANDRA_PASSWORD:-cassandra} -e 'describe cluster' 2>/dev/null; do
+        echo 'Waiting...';
+        sleep 2;
+      done &&
+      echo 'Creating keyspace relamind...' &&
+      cqlsh cassandra -u $${CASSANDRA_USERNAME:-cassandra} -p $${CASSANDRA_PASSWORD:-cassandra} -f /cassandra-init.cql &&
+      echo 'Keyspace created successfully!' &&
+      exit 0
+      "
+
+  # Backend Spring Boot Application - 使用预构建镜像
   backend:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: ghcr.io/${GITHUB_USER:-your-username}/${GITHUB_REPO:-relamind}/backend:latest
     container_name: relamind-backend
     environment:
       SPRING_PROFILES_ACTIVE: docker
@@ -65,17 +93,17 @@ services:
         condition: service_healthy
       cassandra:
         condition: service_healthy
+      cassandra-init:
+        condition: service_completed_successfully
     volumes:
       - ./tmp:/app/tmp
     networks:
       - relamind-network
     restart: unless-stopped
 
-  # Frontend Vue Application
+  # Frontend Vue Application - 使用预构建镜像
   frontend:
-    build:
-      context: ./ai-agent-frontend
-      dockerfile: Dockerfile
+    image: ghcr.io/${GITHUB_USER:-your-username}/${GITHUB_REPO:-relamind}/frontend:latest
     container_name: relamind-frontend
     ports:
       - "80:80"

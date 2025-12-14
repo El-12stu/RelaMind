@@ -347,18 +347,18 @@ cp env.example .env
 #    - POSTGRES_PASSWORD（可选，建议修改）：数据库密码
 #    - CASSANDRA_PASSWORD（可选，建议修改）：Cassandra 密码
 
-# 4. 修改 docker-compose.prod.yml 中的镜像地址
+# 4. 修改 docker-compose.yml 中的镜像地址
 #    将 your-username 替换为你的 GitHub 用户名
 #    例如：ghcr.io/your-username/RelaMind/backend:latest
 
 # 5. 启动所有服务
-docker-compose -f docker-compose.prod.yml up -d
+docker-compose -f docker-compose.yml up -d
 
 # 6. 查看服务状态
-docker-compose -f docker-compose.prod.yml ps
+docker-compose -f docker-compose.yml ps
 
 # 7. 查看日志
-docker-compose -f docker-compose.prod.yml logs -f backend
+docker-compose -f docker-compose.yml logs -f backend
 ```
 
 **访问应用**：
@@ -410,24 +410,24 @@ docker-compose logs -f backend
 
 ```bash
 # 启动服务
-docker-compose -f docker-compose.prod.yml up -d
+docker-compose -f docker-compose.yml up -d
 
 # 停止服务
-docker-compose -f docker-compose.prod.yml down
+docker-compose -f docker-compose.yml down
 
 # 停止并删除数据卷（⚠️ 会删除所有数据）
-docker-compose -f docker-compose.prod.yml down -v
+docker-compose -f docker-compose.yml down -v
 
 # 查看日志
-docker-compose -f docker-compose.prod.yml logs -f backend
+docker-compose -f docker-compose.yml logs -f backend
 
 # 重启服务
-docker-compose -f docker-compose.prod.yml restart backend
+docker-compose -f docker-compose.yml restart backend
 
 # 修改配置后重启
 # 1. 修改 .env 文件
 # 2. 重启服务
-docker-compose -f docker-compose.prod.yml restart backend
+docker-compose -f docker-compose.yml restart backend
 ```
 
 ---
