@@ -48,11 +48,8 @@ jobs:
           tags: |
             type=ref,event=branch
             type=ref,event=pr
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
             type=sha,format=long,prefix=sha-
             type=raw,value=latest,enable={{is_default_branch}}
-            type=raw,value=latest,enable={{is_tag}}
 
       - name: Build and push backend image
         uses: docker/build-push-action@v5
@@ -73,11 +70,8 @@ jobs:
           tags: |
             type=ref,event=branch
             type=ref,event=pr
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
             type=sha,format=long,prefix=sha-
             type=raw,value=latest,enable={{is_default_branch}}
-            type=raw,value=latest,enable={{is_tag}}
 
       - name: Build and push frontend image
         uses: docker/build-push-action@v5
