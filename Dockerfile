@@ -13,9 +13,12 @@ COPY src ./src
 # 构建应用
 RUN mvn clean package -DskipTests -B
 
-# 运行阶段：使用更小的 JRE 镜像
-FROM amazoncorretto:21-alpine-jre
+# 运行阶段：使用更小的 Alpine 镜像
+FROM amazoncorretto:21-alpine
 WORKDIR /app
+
+# 安装 wget 用于健康检查（需要在创建用户之前，因为需要 root 权限）
+RUN apk add --no-cache wget
 
 # 创建非 root 用户
 RUN addgroup -S spring && adduser -S spring -G spring
