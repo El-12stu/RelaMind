@@ -320,29 +320,65 @@ npm run dev
 
 **难度评估**：⭐⭐☆☆☆（简单到中等）
 
-Docker 化已经完成，只需要几个简单步骤即可部署整个应用栈。
+Docker 化已经完成，支持两种部署方式：使用预构建镜像（推荐）或本地构建。
 
 **前置要求**：
 - 安装 Docker 和 Docker Compose
 - 配置 AI 大模型 API Key
 
-**快速启动**：
+---
+
+### 🚀 方式 A：使用预构建镜像（推荐，最简单）
+
+**优点**：无需构建环境，直接拉取使用，快速启动
 
 ```bash
-# 方式一：使用环境变量（推荐）
+# 1. 克隆仓库
+git clone https://github.com/your-username/RelaMind.git
+cd RelaMind
+
+# 2. 创建配置文件
+cp env.example .env
+
+# 3. 编辑 .env 文件，配置以下内容：
+#    - DASHSCOPE_API_KEY（必填）：你的阿里云 DashScope API Key
+#    - GITHUB_USER（必填）：你的 GitHub 用户名
+#    - GITHUB_REPO（必填）：仓库名（通常是 RelaMind）
+#    - POSTGRES_PASSWORD（可选，建议修改）：数据库密码
+#    - CASSANDRA_PASSWORD（可选，建议修改）：Cassandra 密码
+
+# 4. 修改 docker-compose.prod.yml 中的镜像地址
+#    将 your-username 替换为你的 GitHub 用户名
+#    例如：ghcr.io/your-username/RelaMind/backend:latest
+
+# 5. 启动所有服务
+docker-compose -f docker-compose.prod.yml up -d
+
+# 6. 查看服务状态
+docker-compose -f docker-compose.prod.yml ps
+
+# 7. 查看日志
+docker-compose -f docker-compose.prod.yml logs -f backend
+```
+
+**访问应用**：
+- 前端：http://localhost
+- 后端 API：http://localhost:8123/api
+- Swagger 文档：http://localhost:8123/api/swagger-ui.html
+
+---
+
+### 🔨 方式 B：本地构建镜像
+
+**优点**：可以自定义构建参数，适合开发调试
+
+```bash
 # 1. 创建 .env 文件（可选，用于配置敏感信息）
-cat > .env << EOF
-DASHSCOPE_API_KEY=your-api-key-here
-POSTGRES_PASSWORD=your-strong-password
-CASSANDRA_PASSWORD=your-strong-password
-EOF
+cp env.example .env
+# 编辑 .env 文件，至少配置 DASHSCOPE_API_KEY
 
-# 2. 一键启动所有服务
-docker-compose up -d
-
-# 方式二：直接使用环境变量
-export DASHSCOPE_API_KEY=your-api-key-here
-docker-compose up -d
+# 2. 使用开发配置启动（会自动构建镜像）
+docker-compose up -d --build
 
 # 3. 查看服务状态
 docker-compose ps
@@ -351,37 +387,86 @@ docker-compose ps
 docker-compose logs -f backend
 ```
 
-**访问应用**：
-- 前端：http://localhost
-- 后端 API：http://localhost:8123/api
-- Swagger 文档：http://localhost:8123/api/swagger-ui.html
+---
 
-**停止服务**：
+### 📋 配置说明
+
+所有配置通过环境变量注入，**镜像中不包含任何敏感信息**。
+
+**必填配置**：
+- `DASHSCOPE_API_KEY`：阿里云 DashScope API Key
+
+**可选配置**（有默认值）：
+- `POSTGRES_USER`：默认 `relamind`
+- `POSTGRES_PASSWORD`：默认 `relamind123`（⚠️ 生产环境建议修改）
+- `CASSANDRA_USERNAME`：默认 `cassandra`
+- `CASSANDRA_PASSWORD`：默认 `cassandra`（⚠️ 生产环境建议修改）
+
+详细配置说明请查看 [CONFIGURATION.md](CONFIGURATION.md)
+
+---
+
+### 🛠️ 常用命令
+
 ```bash
-docker-compose down
+# 启动服务
+docker-compose -f docker-compose.prod.yml up -d
 
-# 停止并删除数据卷（注意：会删除所有数据）
-docker-compose down -v
+# 停止服务
+docker-compose -f docker-compose.prod.yml down
+
+# 停止并删除数据卷（⚠️ 会删除所有数据）
+docker-compose -f docker-compose.prod.yml down -v
+
+# 查看日志
+docker-compose -f docker-compose.prod.yml logs -f backend
+
+# 重启服务
+docker-compose -f docker-compose.prod.yml restart backend
+
+# 修改配置后重启
+# 1. 修改 .env 文件
+# 2. 重启服务
+docker-compose -f docker-compose.prod.yml restart backend
 ```
 
-**Docker 化的优势**：
-- ✅ **一键部署**：无需手动安装 JDK、Maven、Node.js、PostgreSQL、Cassandra
-- ✅ **环境隔离**：开发、测试、生产环境完全一致
-- ✅ **易于扩展**：可以轻松添加更多服务（Redis、Elasticsearch 等）
-- ✅ **数据持久化**：使用 Docker volumes 保存数据
-- ✅ **健康检查**：自动检测服务状态
+---
 
-**Docker 文件说明**：
+### 📦 Docker 文件说明
+
 - `Dockerfile`：后端应用镜像（多阶段构建，优化镜像大小）
 - `ai-agent-frontend/Dockerfile`：前端应用镜像（Nginx 托管）
-- `docker-compose.yml`：编排所有服务（PostgreSQL、Cassandra、后端、前端）
+- `docker-compose.yml`：开发环境配置（本地构建镜像）
+- `docker-compose.prod.yml`：生产环境配置（使用预构建镜像）
 - `.dockerignore`：优化构建速度，排除不必要的文件
 
-**注意事项**：
-1. 首次启动需要下载镜像，可能需要几分钟
-2. 确保端口 80、8123、5432、9042 未被占用
-3. API Key 可以通过环境变量 `DASHSCOPE_API_KEY` 传入，或修改 `docker-compose.yml`
-4. 数据存储在 Docker volumes 中，删除容器不会丢失数据
+---
+
+### ⚠️ 注意事项
+
+1. **首次使用预构建镜像**：
+   - 需要先修改 `docker-compose.prod.yml` 中的镜像地址
+   - 替换 `your-username` 为你的 GitHub 用户名
+   - 确保镜像已发布到 GitHub Container Registry
+
+2. **端口占用**：
+   - 确保端口 80、8123、5432、9042 未被占用
+
+3. **数据持久化**：
+   - 数据存储在 Docker volumes 中
+   - 删除容器不会丢失数据
+   - 使用 `docker-compose down -v` 会删除所有数据
+
+4. **配置修改**：
+   - 修改 `.env` 文件后，重启服务即可生效
+   - 无需重新构建镜像
+
+---
+
+### 📚 更多文档
+
+- [CONFIGURATION.md](CONFIGURATION.md) - 详细配置说明
+- [DEPLOYMENT.md](DEPLOYMENT.md) - 完整部署指南
 
 ## 📝 使用示例
 

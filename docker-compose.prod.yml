@@ -1,3 +1,6 @@
+# 生产环境配置 - 使用预构建的Docker镜像
+# 使用方式: docker-compose -f docker-compose.prod.yml up -d
+
 services:
   # PostgreSQL with PgVector extension
   postgres:
@@ -42,11 +45,13 @@ services:
     networks:
       - relamind-network
 
-  # Backend Spring Boot Application
+  # Backend Spring Boot Application - 使用预构建镜像
   backend:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    # ⚠️ 重要：请替换为你的GitHub用户名和仓库名
+    # 格式: ghcr.io/用户名/仓库名/backend:latest
+    # 例如: ghcr.io/el12stu/RelaMind/backend:latest
+    # 如果使用环境变量，请在 .env 文件中设置 GITHUB_USER 和 GITHUB_REPO
+    image: ghcr.io/${GITHUB_USER:-your-username}/${GITHUB_REPO:-RelaMind}/backend:latest
     container_name: relamind-backend
     environment:
       SPRING_PROFILES_ACTIVE: docker
@@ -71,11 +76,13 @@ services:
       - relamind-network
     restart: unless-stopped
 
-  # Frontend Vue Application
+  # Frontend Vue Application - 使用预构建镜像
   frontend:
-    build:
-      context: ./ai-agent-frontend
-      dockerfile: Dockerfile
+    # ⚠️ 重要：请替换为你的GitHub用户名和仓库名
+    # 格式: ghcr.io/用户名/仓库名/frontend:latest
+    # 例如: ghcr.io/el12stu/RelaMind/frontend:latest
+    # 如果使用环境变量，请在 .env 文件中设置 GITHUB_USER 和 GITHUB_REPO
+    image: ghcr.io/${GITHUB_USER:-your-username}/${GITHUB_REPO:-RelaMind}/frontend:latest
     container_name: relamind-frontend
     ports:
       - "80:80"

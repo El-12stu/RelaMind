@@ -27,9 +27,9 @@ COPY --from=build /app/target/RelaMind-0.0.1-SNAPSHOT.jar app.jar
 # 暴露应用端口
 EXPOSE 8123
 
-# 健康检查
+# 健康检查（检查应用是否响应）
 HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:8123/api/actuator/health || exit 1
+  CMD wget --no-verbose --tries=1 --spider http://localhost:8123/api/swagger-ui.html || exit 1
 
 # 启动应用
 ENTRYPOINT ["java", "-jar", "app.jar"]
