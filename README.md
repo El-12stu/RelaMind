@@ -9,6 +9,7 @@
 </div>
 
 RelaMind 是一个基于 AI 的个人成长轨迹分析系统，帮助用户通过记录生活、回顾历史、分析模式来更好地理解自己，实现持续成长。
+[![Star History Chart](https://api.star-history.com/svg?repos=El-12stu/RelaMind&type=Date)](https://star-history.com/#El-12stu/RelaMind&type=Date)
 
 ## 📸 效果展示
 
